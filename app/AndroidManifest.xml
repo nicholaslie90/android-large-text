@@ -13,13 +13,16 @@
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
 
         <!--
-          configChanges keeps the Activity alive across rotation, so turning the
-          phone sideways just re-lays-out the sign instead of recreating it.
+          The app opens on the sign, which is always landscape; MainActivity
+          turns the phone upright when the control panel opens and back again
+          when it closes. configChanges keeps the Activity alive across both, so
+          a turn just re-lays-out the sign rather than recreating it and losing
+          half-typed text.
         -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:screenOrientation="fullSensor"
+            android:screenOrientation="sensorLandscape"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|navigation|uiMode|density|fontScale">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

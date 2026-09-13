@@ -8,6 +8,7 @@ final class SignStyleTest {
         keepsAwkwardText();
         stripsSeparatorsFromText();
         recoversFromGarbage();
+        readsVersionOneRecords();
         copiesEveryField();
     }
 
@@ -19,7 +20,6 @@ final class SignStyleTest {
     private static void roundTripsCustomValues() {
         SignStyle s = new SignStyle();
         s.setText("PICK UP");
-        s.sizeSp = 123.5f;
         s.fgColor = 0xFF00FF00;
         s.bgColor = 0xFF101010;
         s.bold = false;
@@ -30,7 +30,6 @@ final class SignStyleTest {
 
         SignStyle back = SignStyle.parse(s.serialize());
         Assert.equal("text", "PICK UP", back.text);
-        Assert.near("size", 123.5f, back.sizeSp, 0.001f);
         Assert.equal("fg", 0xFF00FF00, back.fgColor);
         Assert.equal("bg", 0xFF101010, back.bgColor);
         Assert.isFalse("bold", back.bold);
@@ -62,8 +61,40 @@ final class SignStyleTest {
         Assert.equal("empty", fallback, SignStyle.parse(""));
         Assert.equal("truncated", fallback, SignStyle.parse("1" + SignStyle.FIELD + "2"));
 
-        String bad = new SignStyle().serialize().replace("-1.0", "not-a-number");
+        String bad = new SignStyle().serialize()
+                .replace(String.valueOf(new SignStyle().fgColor), "not-a-number");
         Assert.equal("non-numeric field", fallback, SignStyle.parse(bad));
+    }
+
+    private static void readsVersionOneRecords() {
+        // Version 1 kept a hand-set size in field 1. The sign auto-fits now, so
+        // the field is skipped — but the message and its colours must survive,
+        // or upgrading would wipe the recents list.
+        String v1 = join("1", "123.5", "-16711936", "-15724528", "0",
+                String.valueOf(SignStyle.FONT_MONO),
+                String.valueOf(SignStyle.ALIGN_LEFT), "1", "350", "PICK UP");
+
+        SignStyle back = SignStyle.parse(v1);
+        Assert.equal("text", "PICK UP", back.text);
+        Assert.equal("fg", 0xFF00FF00, back.fgColor);
+        Assert.equal("bg", 0xFF101010, back.bgColor);
+        Assert.isFalse("bold", back.bold);
+        Assert.equal("font", SignStyle.FONT_MONO, back.font);
+        Assert.equal("align", SignStyle.ALIGN_LEFT, back.align);
+        Assert.isTrue("marquee", back.marquee);
+        Assert.equal("speed", 350, back.speedDp);
+
+        // Re-saving drops the stale field rather than carrying it forever.
+        Assert.equal("rewritten as version 2", back, SignStyle.parse(back.serialize()));
+    }
+
+    private static String join(String... fields) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < fields.length; i++) {
+            if (i > 0) sb.append(SignStyle.FIELD);
+            sb.append(fields[i]);
+        }
+        return sb.toString();
     }
 
     private static void copiesEveryField() {

@@ -1,6 +1,7 @@
 package vc.east.bigsign;
 
 import android.app.Activity;
+import android.content.pm.ActivityInfo;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -26,10 +27,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * One screen with two modes. Display mode is a fullscreen sign; tapping it
- * reveals the control panel, and tapping the sign again (or SHOW SIGN) puts it
- * away and records what is on screen in the recents list. Screen brightness is
- * left to the system in both modes.
+ * One screen with two modes, one per orientation. Display mode is a fullscreen
+ * landscape sign; tapping it turns the phone upright and reveals the control
+ * panel, and tapping the sign again (or SHOW SIGN) puts it away, goes back to
+ * landscape, and records what is on screen in the recents list. Screen
+ * brightness is left to the system in both modes, and the text size is never set
+ * by hand — {@link SignView} re-fits it to whatever box it is given.
  */
 public class MainActivity extends Activity {
 
@@ -37,10 +40,6 @@ public class MainActivity extends Activity {
             0xFFFFFFFF, 0xFF000000, 0xFFFF2D2D, 0xFFFF9500, 0xFFFFE600,
             0xFF34C759, 0xFF00C8FF, 0xFF0A84FF, 0xFFFF2D95, 0xFF8E8E93,
     };
-
-    /** Manual sizes run from 12sp upwards, one seek bar step at a time. */
-    private static final float SIZE_BASE_SP = 12f;
-    private static final float SIZE_STEP_SP = 3f;
 
     /** Ticker speeds, in dp per second. */
     private static final int SPEED_MIN_DP = 40;
@@ -51,9 +50,7 @@ public class MainActivity extends Activity {
     private SignView sign;
     private ScrollView panel;
     private EditText input;
-    private SeekBar sizeBar;
     private SeekBar speedBar;
-    private TextView sizeLabel;
     private TextView speedLabel;
     private TextView recentLabel;
     private View recentScroll;
@@ -102,9 +99,7 @@ public class MainActivity extends Activity {
         sign = findViewById(R.id.sign);
         panel = findViewById(R.id.panel);
         input = findViewById(R.id.input);
-        sizeBar = findViewById(R.id.size);
         speedBar = findViewById(R.id.speed);
-        sizeLabel = findViewById(R.id.size_label);
         speedLabel = findViewById(R.id.speed_label);
         recentLabel = findViewById(R.id.recent_label);
         recentScroll = findViewById(R.id.recent_scroll);
@@ -134,17 +129,6 @@ public class MainActivity extends Activity {
             public void afterTextChanged(Editable s) {
                 if (syncing) return;
                 style.setText(s.toString());
-                sign.setStyle(style);
-            }
-        });
-
-        sizeBar.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            void onValue(int progress) {
-                style.sizeSp = progress == 0
-                        ? SignStyle.AUTO
-                        : SIZE_BASE_SP + progress * SIZE_STEP_SP;
-                updateSizeLabel();
                 sign.setStyle(style);
             }
         });
@@ -201,6 +185,12 @@ public class MainActivity extends Activity {
         editing = edit;
         panel.setVisibility(edit ? View.VISIBLE : View.GONE);
         setSystemBarsVisible(edit);
+        // Typing wants the phone upright and the keyboard wide; the sign itself
+        // wants it sideways. sensorLandscape so the sign can be held either way
+        // up, plain portrait so the controls always come back the right way up.
+        setRequestedOrientation(edit
+                ? ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                : ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
 
         if (edit) {
             syncing = true;
@@ -276,33 +266,19 @@ public class MainActivity extends Activity {
     private void syncControlsFromStyle() {
         syncing = true;
         input.setText(style.text);
-        sizeBar.setProgress(sizeToProgress(style.sizeSp));
         speedBar.setProgress(speedToProgress(style.speedDp));
         marqueeSwitch.setChecked(style.marquee);
         syncing = false;
 
-        updateSizeLabel();
         updateSpeedLabel();
         updateSpeedVisibility();
         updateToggleLabels();
         updateSwatchSelection();
     }
 
-    private int sizeToProgress(float sizeSp) {
-        if (sizeSp == SignStyle.AUTO) return 0;
-        int progress = Math.round((sizeSp - SIZE_BASE_SP) / SIZE_STEP_SP);
-        return Math.max(1, Math.min(100, progress));
-    }
-
     private int speedToProgress(int speedDp) {
         int progress = Math.round((speedDp - SPEED_MIN_DP) * 100f / (SPEED_MAX_DP - SPEED_MIN_DP));
         return Math.max(0, Math.min(100, progress));
-    }
-
-    private void updateSizeLabel() {
-        sizeLabel.setText(style.sizeSp == SignStyle.AUTO
-                ? "SIZE — AUTO (fills the screen)"
-                : "SIZE — " + Math.round(style.sizeSp) + "sp");
     }
 
     private void updateSpeedLabel() {

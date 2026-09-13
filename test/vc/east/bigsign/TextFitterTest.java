@@ -13,6 +13,10 @@ final class TextFitterTest {
         wrapsAtSpacesRatherThanGrowing();
         breaksOnlyWhenAWordCannotFitAtAll();
         shrinksToFitHeight();
+        fillsTheHeightWithInkRatherThanFontPadding();
+        leadsMultipleLinesByTheFontButBoundsThemByTheirInk();
+        measuresABlockFromItsInk();
+        keepsBlankLinesHoldingTheirLineOpen();
         wrapsOnSpaces();
         keepsExplicitNewlines();
         breaksWordsTooLongToWrap();
@@ -57,9 +61,41 @@ final class TextFitterTest {
     }
 
     private static void shrinksToFitHeight() {
-        // One line of height 1.2 * size must fit 60px.
+        // One line of ink 0.8 * size tall must fit 60px.
         TextFitter.Fit fit = TextFitter.fit("HI", 10000, 60, 8, 400, M);
-        Assert.near("height-bound size", 50, fit.size, 1f);
+        Assert.near("height-bound size", 75, fit.size, 1f);
+    }
+
+    private static void fillsTheHeightWithInkRatherThanFontPadding() {
+        // The whole point of the sign: a height-bound line should end up with
+        // its glyphs touching top and bottom. Sizing to the font's 1.2em line
+        // box instead of the 0.8em of ink inside it leaves a third of the
+        // screen blank.
+        TextFitter.Fit fit = TextFitter.fit("HI", 10000, 600, 8, 4000, M);
+        TextFitter.Block block = TextFitter.measure(fit.lines, fit.size, M);
+        Assert.near("ink fills the box", 600, block.height, 1f);
+    }
+
+    private static void leadsMultipleLinesByTheFontButBoundsThemByTheirInk() {
+        // Two lines span one 1.2em gap between baselines plus the 0.8em of ink
+        // around them: 2.0em, not the 2.4em of two whole line boxes.
+        TextFitter.Fit fit = TextFitter.fit("AA\nBB", 10000, 600, 8, 4000, M);
+        Assert.near("two-line size", 300, fit.size, 1f);
+    }
+
+    private static void measuresABlockFromItsInk() {
+        TextFitter.Block block = TextFitter.measure(
+                TextFitter.wrap("AA\nBB", 10000, 100, M), 100, M);
+        Assert.near("first baseline sits under the ink", 70, block.firstBaseline, 0.001f);
+        Assert.near("ink height", 200, block.height, 0.001f);
+    }
+
+    private static void keepsBlankLinesHoldingTheirLineOpen() {
+        // A leading newline draws nothing but must still push the text down.
+        TextFitter.Block block = TextFitter.measure(
+                TextFitter.wrap("\nBB", 10000, 100, M), 100, M);
+        Assert.near("blank line keeps its height", 130, block.height, 0.001f);
+        Assert.near("block starts at the blank baseline", 0, block.firstBaseline, 0.001f);
     }
 
     private static void wrapsOnSpaces() {

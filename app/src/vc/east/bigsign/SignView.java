@@ -3,6 +3,7 @@ package vc.east.bigsign;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.View;
@@ -115,16 +116,16 @@ public class SignView extends View {
     }
 
     /**
-     * A manual size is passed as both bounds of the search, so the fitter returns
-     * exactly that size and only does the wrapping.
+     * Re-fits the text to whatever box the view currently has. The size is never
+     * chosen by hand, so this runs again on every rotation and every time the
+     * control panel opens or closes.
      */
     private void ensureFit() {
         if (fit != null) {
             return;
         }
-        boolean auto = style.sizeSp == SignStyle.AUTO;
-        float min = auto ? MIN_SP * density : style.sizeSp * density;
-        float max = auto ? MAX_SP * density : style.sizeSp * density;
+        float min = MIN_SP * density;
+        float max = MAX_SP * density;
 
         // A ticker is one unwrapped line, so it is only ever bounded by height.
         String text = style.marquee ? style.text.replace('\n', ' ') : style.text;
@@ -140,20 +141,22 @@ public class SignView extends View {
 
         paint.setColor(style.fgColor);
         paint.setTextSize(fit.size);
-        Paint.FontMetrics fm = paint.getFontMetrics();
-        float lineHeight = fm.bottom - fm.top;
+
+        // Centring uses the same ink block the fitter sized against, so the
+        // text is centred on its glyphs rather than on the font's line boxes.
+        TextFitter.Block block = TextFitter.measure(fit.lines, fit.size, measurer);
+        float top = getPaddingTop() + (contentHeight() - block.height) / 2f;
 
         if (style.marquee) {
-            drawMarquee(canvas, fm, lineHeight);
+            drawMarquee(canvas, top + block.firstBaseline);
         } else {
-            drawStatic(canvas, fm, lineHeight);
+            drawStatic(canvas, top + block.firstBaseline);
         }
     }
 
-    private void drawStatic(Canvas canvas, Paint.FontMetrics fm, float lineHeight) {
+    private void drawStatic(Canvas canvas, float firstBaseline) {
         List<String> lines = fit.lines;
-        float blockHeight = lines.size() * lineHeight;
-        float top = getPaddingTop() + (contentHeight() - blockHeight) / 2f;
+        float lineHeight = measurer.lineHeight(fit.size);
 
         boolean centered = style.align == SignStyle.ALIGN_CENTER;
         paint.setTextAlign(centered ? Paint.Align.CENTER : Paint.Align.LEFT);
@@ -162,12 +165,11 @@ public class SignView extends View {
                 : getPaddingLeft();
 
         for (int i = 0; i < lines.size(); i++) {
-            float baseline = top + i * lineHeight - fm.top;
-            canvas.drawText(lines.get(i), x, baseline, paint);
+            canvas.drawText(lines.get(i), x, firstBaseline + i * lineHeight, paint);
         }
     }
 
-    private void drawMarquee(Canvas canvas, Paint.FontMetrics fm, float lineHeight) {
+    private void drawMarquee(Canvas canvas, float baseline) {
         String text = fit.lines.isEmpty() ? "" : fit.lines.get(0);
         paint.setTextAlign(Paint.Align.LEFT);
 
@@ -185,7 +187,6 @@ public class SignView extends View {
         }
         lastFrameMs = now;
 
-        float baseline = getPaddingTop() + (contentHeight() - lineHeight) / 2f - fm.top;
         float x = getPaddingLeft() - marqueeOffset;
         canvas.drawText(text, x, baseline, paint);
         // The repeat keeps the line continuous as the first copy leaves the screen.
@@ -196,6 +197,8 @@ public class SignView extends View {
 
     /** Backs {@link TextFitter} with real glyph metrics from a scratch Paint. */
     private final class PaintMeasurer implements TextFitter.Measurer {
+
+        private final Rect bounds = new Rect();
 
         @Override
         public float width(String s, float size) {
@@ -208,6 +211,29 @@ public class SignView extends View {
             measurePaint.setTextSize(size);
             Paint.FontMetrics fm = measurePaint.getFontMetrics();
             return fm.bottom - fm.top;
+        }
+
+        @Override
+        public float inkAscent(String s, float size) {
+            // getTextBounds reports the drawn glyphs, so a line of caps measures
+            // its cap height and not the ascent the font reserves above it.
+            return -inkBounds(s, size).top;
+        }
+
+        @Override
+        public float inkDescent(String s, float size) {
+            return inkBounds(s, size).bottom;
+        }
+
+        private Rect inkBounds(String s, float size) {
+            measurePaint.setTextSize(size);
+            measurePaint.getTextBounds(s, 0, s.length(), bounds);
+            if (s.trim().isEmpty()) {
+                // Whitespace has no ink; keep it from collapsing to a stray box.
+                bounds.top = 0;
+                bounds.bottom = 0;
+            }
+            return bounds;
         }
     }
 }

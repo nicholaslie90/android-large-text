@@ -6,9 +6,6 @@ package vc.east.bigsign;
  */
 public final class SignStyle {
 
-    /** Sentinel for {@link #sizeSp}: pick the largest size that fits the screen. */
-    public static final float AUTO = -1f;
-
     public static final int FONT_SANS = 0;
     public static final int FONT_SERIF = 1;
     public static final int FONT_MONO = 2;
@@ -21,10 +18,13 @@ public final class SignStyle {
     /** ASCII record separator: splits styles within the history list. */
     static final char RECORD = (char) 0x1E;
 
-    private static final int FIELD_COUNT = 10;
+    /** Leading field of every record, so old formats can still be read. */
+    private static final int VERSION = 2;
+    private static final int FIELD_COUNT = 9;
+    /** Version 1 carried a manual text size; the sign now always auto-fits. */
+    private static final int FIELD_COUNT_V1 = 10;
 
     public String text = "";
-    public float sizeSp = AUTO;
     public int fgColor = 0xFFFFFFFF;
     public int bgColor = 0xFF000000;
     public boolean bold = true;
@@ -39,7 +39,6 @@ public final class SignStyle {
 
     public SignStyle(SignStyle other) {
         text = other.text;
-        sizeSp = other.sizeSp;
         fgColor = other.fgColor;
         bgColor = other.bgColor;
         bold = other.bold;
@@ -65,8 +64,7 @@ public final class SignStyle {
     /** Text is serialized last so a stray separator cannot shift other fields. */
     public String serialize() {
         return new StringBuilder()
-                .append(1).append(FIELD)
-                .append(sizeSp).append(FIELD)
+                .append(VERSION).append(FIELD)
                 .append(fgColor).append(FIELD)
                 .append(bgColor).append(FIELD)
                 .append(bold ? 1 : 0).append(FIELD)
@@ -78,22 +76,30 @@ public final class SignStyle {
                 .toString();
     }
 
-    /** Returns a default style if the input is missing or unparseable. */
+    /**
+     * Returns a default style if the input is missing or unparseable. Version 1
+     * records are still read: their manual size field is skipped, so upgrading
+     * keeps the recents list rather than silently emptying it.
+     */
     public static SignStyle parse(String s) {
         SignStyle out = new SignStyle();
         if (s == null || s.isEmpty()) return out;
-        String[] p = s.split(String.valueOf(FIELD), FIELD_COUNT);
-        if (p.length < FIELD_COUNT) return out;
+
+        boolean v1 = s.startsWith("1" + FIELD);
+        int count = v1 ? FIELD_COUNT_V1 : FIELD_COUNT;
+        String[] p = s.split(String.valueOf(FIELD), count);
+        if (p.length < count) return out;
+
+        int i = v1 ? 2 : 1;
         try {
-            out.sizeSp = Float.parseFloat(p[1]);
-            out.fgColor = Integer.parseInt(p[2]);
-            out.bgColor = Integer.parseInt(p[3]);
-            out.bold = "1".equals(p[4]);
-            out.font = Integer.parseInt(p[5]);
-            out.align = Integer.parseInt(p[6]);
-            out.marquee = "1".equals(p[7]);
-            out.speedDp = Integer.parseInt(p[8]);
-            out.text = p[9];
+            out.fgColor = Integer.parseInt(p[i++]);
+            out.bgColor = Integer.parseInt(p[i++]);
+            out.bold = "1".equals(p[i++]);
+            out.font = Integer.parseInt(p[i++]);
+            out.align = Integer.parseInt(p[i++]);
+            out.marquee = "1".equals(p[i++]);
+            out.speedDp = Integer.parseInt(p[i++]);
+            out.text = p[i];
         } catch (NumberFormatException e) {
             return new SignStyle();
         }

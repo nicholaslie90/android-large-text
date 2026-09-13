@@ -17,6 +17,29 @@ public final class TextFitter {
 
         /** Baseline-to-baseline distance at {@code size}. */
         float lineHeight(float size);
+
+        /**
+         * How far the ink of {@code s} reaches above its baseline. This is the
+         * drawn height of the glyphs, not the font's reserved ascent: caps stop
+         * well short of it, and an empty string has none at all.
+         */
+        float inkAscent(String s, float size);
+
+        /** How far the ink of {@code s} reaches below its baseline. */
+        float inkDescent(String s, float size);
+    }
+
+    /** Where a block of wrapped lines actually puts ink on the screen. */
+    public static final class Block {
+        /** Top of the ink down to the first line's baseline. */
+        public final float firstBaseline;
+        /** Top of the first line's ink to the bottom of the last line's. */
+        public final float height;
+
+        Block(float firstBaseline, float height) {
+            this.firstBaseline = firstBaseline;
+            this.height = height;
+        }
     }
 
     /** A chosen size together with the lines it wraps into. */
@@ -28,6 +51,30 @@ public final class TextFitter {
             this.size = size;
             this.lines = lines;
         }
+    }
+
+    /**
+     * Vertical extent of {@code lines} set at {@code size}. Baselines are spaced
+     * a font line apart, which is what keeps multi-line text evenly leaded, but
+     * the block is bounded by the ink rather than by the font's line boxes — the
+     * padding a font reserves above caps and below the baseline is dead space on
+     * a sign, and fitting the screen to it leaves the text far smaller than it
+     * could be.
+     */
+    public static Block measure(List<String> lines, float size, Measurer m) {
+        if (lines == null || lines.isEmpty()) {
+            return new Block(0f, 0f);
+        }
+        float spacing = m.lineHeight(size);
+        float top = Float.MAX_VALUE;
+        float bottom = -Float.MAX_VALUE;
+        for (int i = 0; i < lines.size(); i++) {
+            // A blank line has no ink, but still has to hold its line open.
+            float baseline = i * spacing;
+            top = Math.min(top, baseline - m.inkAscent(lines.get(i), size));
+            bottom = Math.max(bottom, baseline + m.inkDescent(lines.get(i), size));
+        }
+        return new Block(-top, bottom - top);
     }
 
     /** Stop bisecting once the remaining range is smaller than this, in px. */
@@ -84,7 +131,7 @@ public final class TextFitter {
     private static boolean fits(String text, float maxW, float maxH, float size,
                                 Measurer m, boolean breakWords) {
         List<String> lines = wrap(text, maxW, size, m, breakWords);
-        if (lines.size() * m.lineHeight(size) > maxH) {
+        if (measure(lines, size, m).height > maxH) {
             return false;
         }
         for (String line : lines) {

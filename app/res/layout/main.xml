@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The sign takes all the space the control panel is not using, so the panel
-  slides in underneath it rather than covering it up.
+  The sign and the control panel split the screen by weight when the panel is
+  open, and the sign takes all of it when the panel is gone. Weights rather than
+  wrap_content because the keyboard eats most of the height: a wrap_content panel
+  would run off the bottom of the screen instead of scrolling inside it.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -14,13 +16,13 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:minHeight="110dp"
         android:padding="12dp" />
 
     <ScrollView
         android:id="@+id/panel"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="2"
         android:background="#F5121212"
         android:visibility="gone">
 
@@ -60,17 +62,6 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal" />
             </HorizontalScrollView>
-
-            <TextView
-                android:id="@+id/size_label"
-                style="@style/PanelLabel"
-                android:text="SIZE" />
-
-            <SeekBar
-                android:id="@+id/size"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:max="100" />
 
             <TextView
                 style="@style/PanelLabel"

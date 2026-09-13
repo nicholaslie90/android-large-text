@@ -2,18 +2,22 @@
 
 A phone-sized signboard. Type something, and it fills the whole screen — for
 airport pickups, "BACK IN 5 MIN" on a shop door, or holding a name up across a
-crowded room. Works in portrait and landscape.
+crowded room. The sign shows in landscape, because that is the shape that fits
+the most text, and you type it in portrait, because that is the shape that fits
+a keyboard. It sizes itself: there is no size setting to get wrong.
 
 <!-- Screens: display mode is just the text; tapping it reveals the controls. -->
 
 ## Using it
 
-- **Tap the sign** to open the controls. Tap it again, or press **SHOW SIGN**,
-  to go back to the fullscreen sign.
+- **Tap the sign** to open the controls — the phone turns upright to type. Tap
+  the sign again, or press **SHOW SIGN**, to go back to the fullscreen sign and
+  back to landscape.
 - **Display mode** hides the status and navigation bars and keeps the screen
   awake. Brightness is left alone — turn it up yourself if you are outdoors.
-- **Rotating the phone** just re-lays-out the sign — nothing is lost, and the
-  text re-fits itself to the new shape.
+- **The sign stays landscape** whichever way up you hold the phone, so you can
+  hold it either way round. Turning it end-for-end just re-lays-out the sign —
+  nothing is lost, and the text re-fits itself to the new shape.
 
 ### Controls
 
@@ -21,7 +25,6 @@ crowded room. Works in portrait and landscape.
 | --- | --- |
 | Text field | What the sign says. Newlines are kept. |
 | Recent | The last 20 messages, newest first. Tap to reuse, long-press to delete. Each chip previews the colours it was last shown in. |
-| Size | `AUTO` (far left) fills the screen; drag right for a fixed 15–312sp. |
 | Text / Background | Ten preset colours each, plus **INVERT** to swap them. |
 | BOLD / SANS / CENTER | Weight, typeface (sans, serif, mono) and alignment. |
 | Scroll across screen | Turns the sign into an LED-style ticker, with a speed slider in dp per second. |
@@ -84,16 +87,30 @@ History      the recents list: dedupe, cap at 20, newest first
 TextFitter   wrapping, and the binary search for the largest size that fits
 SignView     measures glyphs with Paint, draws the text or scrolls the ticker
 Prefs        SharedPreferences storage
-MainActivity the two modes, the control panel, the recents chips
+MainActivity the two modes and their orientations, the panel, the recents
 ```
 
 The first three hold no Android types, which is what makes them testable on the
 host. `TextFitter` takes its measurements through an interface that `SignView`
 backs with a real `Paint`, and the tests back with a stub where every glyph is
-half an em wide.
+half an em wide and its ink runs from 0.7em above the baseline to 0.1em below.
+
+Stored signs carry a version in their first field. Version 1 had a hand-set size
+there; `SignStyle.parse` reads past it, so the recents list survives the upgrade
+and gets rewritten without it on the next save.
+
+The size is found by bisection, and the thing it fits is the **ink**, not the
+font's line boxes. A font reserves about 1.2em per line, but capitals only draw
+about 0.71em of that; sizing the screen to the reserved box — which is what
+`lines * lineHeight` does, and the obvious way to write it — leaves two fifths
+of the sign as blank ascent and descent, and the text comes out around 1.7×
+smaller than it should be. So `TextFitter.measure` spaces baselines a font line
+apart, which is what keeps multi-line text evenly leaded, but bounds the block by
+`getTextBounds` on the top and bottom lines. `SignView` centres on the same
+block, so what is fitted is what is drawn.
 
 Auto-fit keeps words whole. Splitting one would often allow a larger size —
-`0819` as `08` over `19` fills far more of a narrow portrait screen — but a sign
-that does that is unreadable, so the size gives way instead. Text wraps at
-spaces, and a single word too long to fit its own line even at the smallest size
-is the one case that still gets broken between characters.
+`0819` as `08` over `19` fills far more of a narrow screen — but a sign that does
+that is unreadable, so the size gives way instead. Text wraps at spaces, and a
+single word too long to fit its own line even at the smallest size is the one
+case that still gets broken between characters.
