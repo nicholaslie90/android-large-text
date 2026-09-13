@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BigSign</string>
+    <string name="input_hint">Type what the sign should say</string>
+    <string name="show_sign">SHOW SIGN</string>
+    <string name="label_recent">RECENT — tap to reuse, long-press to delete</string>
+    <string name="label_text_colour">TEXT</string>
+    <string name="label_background">BACKGROUND</string>
+    <string name="label_scroll">Scroll across screen</string>
+    <string name="deleted">Removed from recents</string>
+    <string name="hint_tap">Tap the sign to edit</string>
+</resources>

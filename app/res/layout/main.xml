@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The sign takes all the space the control panel is not using, so the panel
+  slides in underneath it rather than covering it up.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF000000"
+    android:orientation="vertical">
+
+    <vc.east.bigsign.SignView
+        android:id="@+id/sign"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:minHeight="110dp"
+        android:padding="12dp" />
+
+    <ScrollView
+        android:id="@+id/panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#F5121212"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <EditText
+                android:id="@+id/input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top|start"
+                android:hint="@string/input_hint"
+                android:inputType="textMultiLine|textCapSentences"
+                android:maxLines="4"
+                android:minLines="1"
+                android:textColor="#FFFFFFFF"
+                android:textColorHint="#FF777777"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/recent_label"
+                style="@style/PanelLabel"
+                android:text="@string/label_recent" />
+
+            <HorizontalScrollView
+                android:id="@+id/recent_scroll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/recent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+
+            <TextView
+                android:id="@+id/size_label"
+                style="@style/PanelLabel"
+                android:text="SIZE" />
+
+            <SeekBar
+                android:id="@+id/size"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100" />
+
+            <TextView
+                style="@style/PanelLabel"
+                android:text="@string/label_text_colour" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/fg_row"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+
+            <TextView
+                style="@style/PanelLabel"
+                android:text="@string/label_background" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/bg_row"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/bold"
+                    style="@style/PanelButton" />
+
+                <Button
+                    android:id="@+id/font"
+                    style="@style/PanelButton" />
+
+                <Button
+                    android:id="@+id/align"
+                    style="@style/PanelButton" />
+
+                <Button
+                    android:id="@+id/invert"
+                    style="@style/PanelButton"
+                    android:text="INVERT" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/marquee"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/label_scroll"
+                android:textColor="#FFFFFFFF" />
+
+            <TextView
+                android:id="@+id/speed_label"
+                style="@style/PanelLabel"
+                android:text="SPEED" />
+
+            <SeekBar
+                android:id="@+id/speed"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100" />
+
+            <Button
+                android:id="@+id/show"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/show_sign" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
