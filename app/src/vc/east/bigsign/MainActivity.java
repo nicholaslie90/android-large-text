@@ -28,7 +28,8 @@ import java.util.List;
 /**
  * One screen with two modes. Display mode is a fullscreen sign; tapping it
  * reveals the control panel, and tapping the sign again (or SHOW SIGN) puts it
- * away and records what is on screen in the recents list.
+ * away and records what is on screen in the recents list. Screen brightness is
+ * left to the system in both modes.
  */
 public class MainActivity extends Activity {
 
@@ -200,7 +201,6 @@ public class MainActivity extends Activity {
         editing = edit;
         panel.setVisibility(edit ? View.VISIBLE : View.GONE);
         setSystemBarsVisible(edit);
-        setMaxBrightness(!edit);
 
         if (edit) {
             syncing = true;
@@ -216,18 +216,6 @@ public class MainActivity extends Activity {
             rebuildRecents();
         }
         sign.setStyle(style);
-    }
-
-    /**
-     * A sign is meant to be read across a room, so display mode pins the screen
-     * to full brightness. Edit mode hands control back to the system.
-     */
-    private void setMaxBrightness(boolean max) {
-        WindowManager.LayoutParams lp = getWindow().getAttributes();
-        lp.screenBrightness = max
-                ? 1f
-                : WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
-        getWindow().setAttributes(lp);
     }
 
     private void setSystemBarsVisible(boolean visible) {

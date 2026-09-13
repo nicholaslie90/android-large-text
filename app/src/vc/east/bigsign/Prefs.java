@@ -16,14 +16,23 @@ final class Prefs {
         prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE);
     }
 
+    /**
+     * The sign to open on: whatever was last shown, falling back to the newest
+     * entry in the recents list if that is missing or blank, so the app never
+     * opens on an empty sign while there is a recent message to reuse.
+     */
     SignStyle loadStyle() {
         String stored = prefs.getString(KEY_STYLE, null);
-        if (stored == null) {
-            SignStyle first = new SignStyle();
-            first.setText("HELLO");
-            return first;
+        if (stored != null) {
+            SignStyle style = SignStyle.parse(stored);
+            if (!style.text.trim().isEmpty()) return style;
         }
-        return SignStyle.parse(stored);
+        History history = loadHistory();
+        if (!history.isEmpty()) return new SignStyle(history.get(0));
+
+        SignStyle first = new SignStyle();
+        first.setText("HELLO");
+        return first;
     }
 
     void saveStyle(SignStyle style) {

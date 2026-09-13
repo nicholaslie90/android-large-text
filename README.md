@@ -10,8 +10,8 @@ crowded room. Works in portrait and landscape.
 
 - **Tap the sign** to open the controls. Tap it again, or press **SHOW SIGN**,
   to go back to the fullscreen sign.
-- **Display mode** hides the status and navigation bars, keeps the screen awake,
-  and forces full brightness so the text stays readable outdoors.
+- **Display mode** hides the status and navigation bars and keeps the screen
+  awake. Brightness is left alone — turn it up yourself if you are outdoors.
 - **Rotating the phone** just re-lays-out the sign — nothing is lost, and the
   text re-fits itself to the new shape.
 
@@ -27,7 +27,7 @@ crowded room. Works in portrait and landscape.
 | Scroll across screen | Turns the sign into an LED-style ticker, with a speed slider in dp per second. |
 
 Everything is saved automatically — the app reopens showing exactly what it
-showed last.
+showed last, or, if that has been cleared, the newest message in Recent.
 
 ## Building
 
